@@ -1,12 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location'
 
 import WeatherInfo from './components/WeatherInfo'
+import UnitsPicker from './components/UnitsPicker'
+import ReloadIcon from './components/ReloadIcon'
+import WeatherDetails from './components/WeatherDetails'
+import { colors } from './utils/index'
 
-const WEATHER_API_KEY = 'f1cbb869a7756659d760ff5c765ff189'
 const BASE_WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather?'
+const WEATHER_API_KEY = ''
 
 export default function App() {
   const [errorMessage, setErrorMessage] = useState(null)
@@ -15,9 +19,11 @@ export default function App() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, [unitsSystem])
 
   async function load() {
+    setCurrentWeather(null)
+    setErrorMessage(null)
     try {
       let { status } = await Location.requestPermissionsAsync()
 
@@ -29,7 +35,7 @@ export default function App() {
 
       const { latitude, longitude } = location.coords
 
-      const weatherUrl = `${BASE_WEATHER_URL}lat=${latitude}&lon=${longitude}&units=${unitsSystem}&appid=${WEATHER_API_KEY}`
+      const weatherUrl = `${BASE_WEATHER_URL}lat=${latitude}&lon=${longitude}&units=${unitsSystem}&appid=${WEATHER_API_KEY}&lang=pt_br`
       
       const response = await fetch(weatherUrl)
 
@@ -47,18 +53,28 @@ export default function App() {
   }
 
   if(currentWeather) {
-    const { main : {temp}} = currentWeather
     return (
       <View style={styles.container}>
         <StatusBar style="auto" />
         <View style={styles.main}>
+          <UnitsPicker unitsSyste={unitsSystem} setUnitsSystem={setUnitsSystem} />
+          <ReloadIcon load={load} />
           <WeatherInfo currentWeather={currentWeather} />
         </View>
+        <WeatherDetails currentWeather={currentWeather} unitsSystem={unitsSystem} />
       </View>
-    )} else {
+    )} else if(errorMessage) {
     return (
       <View style={styles.container}>
-        <Text>{errorMessage}</Text>
+        <ReloadIcon load={load} />
+        <Text style={{ textAlign: 'center' }}>{errorMessage}</Text>
+        <StatusBar style="auto" />
+      </View>
+    )
+  } else {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.PRIMARY_COLOR} />
         <StatusBar style="auto" />
       </View>
     )
